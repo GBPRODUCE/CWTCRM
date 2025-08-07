@@ -6,14 +6,36 @@
   <title>詮威科技 助聽器庫存與訂單系統</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/html5-qrcode@2.3.7/minified/html5-qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+      <style>
+    .input-field {
+      border: 1px solid #cbd5e0;
+      padding: 0.5rem;
+      border-radius: 0.375rem;
+      font-size: 1rem;
+    }
+    .input-field:focus {
+      outline: none;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.4);
+    }
+  </style>
 </head>
 <body class="bg-gray-50 min-h-screen p-6 font-sans">
   <div class="max-w-5xl mx-auto bg-white p-8 rounded shadow-lg">
     <h1 class="text-3xl font-bold mb-6 text-center text-blue-700">詮威科技 助聽器庫存與訂單系統</h1>
 
-    <!-- 新增庫存 -->
-    <section class="mb-8">
-      <h2 class="text-xl font-semibold mb-3 border-b pb-1 border-blue-300">助聽器進貨登錄</h2>
+    <!-- 分頁標籤 -->
+    <nav class="mb-6 border-b border-gray-300">
+      <ul class="flex space-x-4">
+        <li><button class="tab-btn px-4 py-2 font-semibold border-b-2 border-blue-600 text-blue-600" data-tab="add-inventory">助聽器進貨登錄</button></li>
+        <li><button class="tab-btn px-4 py-2 font-semibold text-gray-600 hover:text-blue-600" data-tab="sell-product">助聽器銷售出貨</button></li>
+        <li><button class="tab-btn px-4 py-2 font-semibold text-gray-600 hover:text-blue-600" data-tab="search-scan">助聽器查詢與掃描</button></li>
+      </ul>
+    </nav>
+
+    <!-- 分頁內容 -->
+    <section id="add-inventory" class="tab-content">
       <form id="addInventoryForm" class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <input type="text" name="name" placeholder="品名" required class="input-field" />
         <input type="text" name="productCode" placeholder="品號 (數字)" pattern="\d+" required class="input-field" />
@@ -22,12 +44,22 @@
         <input type="number" name="discount" placeholder="折扣 (0~1)" step="0.01" min="0" max="1" required class="input-field" />
         <button type="submit" class="col-span-full bg-blue-600 text-white font-semibold py-2 rounded hover:bg-blue-700 transition">新增庫存</button>
       </form>
+
+      <div class="mt-4 grid grid-cols-2 gap-4">
+        <div>
+          <p class="font-semibold mb-1">品號 QR Code</p>
+          <canvas id="productCodeQR"></canvas>
+        </div>
+        <div>
+          <p class="font-semibold mb-1">序號 QR Code</p>
+          <canvas id="serialNumberQR"></canvas>
+        </div>
+      </div>
+
       <p id="addInventoryMsg" class="text-green-600 mt-2"></p>
     </section>
 
-    <!-- 銷售出貨 -->
-    <section class="mb-8">
-      <h2 class="text-xl font-semibold mb-3 border-b pb-1 border-blue-300">助聽器銷售出貨</h2>
+    <section id="sell-product" class="tab-content hidden">
       <form id="sellProductForm" class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <input type="text" name="productCode" placeholder="品號" required class="input-field" />
         <input type="text" name="serialNumber" placeholder="序號" required class="input-field" />
@@ -41,9 +73,7 @@
       <p id="sellProductMsg" class="text-green-600 mt-2"></p>
     </section>
 
-    <!-- 搜尋與掃碼 -->
-    <section>
-      <h2 class="text-xl font-semibold mb-3 border-b pb-1 border-blue-300">助聽器查詢與掃描</h2>
+    <section id="search-scan" class="tab-content hidden">
       <div class="flex gap-4 flex-col md:flex-row items-start">
         <input type="text" id="searchCodeInput" placeholder="輸入品號或序號" class="input-field flex-grow" />
         <button id="searchBtn" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition">查詢</button>
@@ -55,24 +85,64 @@
       </div>
     </section>
   </div>
-
-  <style>
-    .input-field {
-      border: 1px solid #cbd5e0;
-      padding: 0.5rem;
-      border-radius: 0.375rem;
-      font-size: 1rem;
-    }
-    .input-field:focus {
-      outline: none;
-      border-color: #2563eb;
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.4);
-    }
-  </style>
-
   <script>
     const API_URL = 'https://script.google.com/macros/s/AKfycbyTcCTVN7dtqpUIyneT9os7GDINXxjt_Zg43KBapw_WzAhlkDhdxCET6_7JbrGSxTAf/exec';
- // 替換成你部署的 GAS URL
+
+    // 分頁切換
+    const tabs = document.querySelectorAll('.tab-btn');
+    const contents = document.querySelectorAll('.tab-content');
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        // 清除所有 tab 按鈕狀態
+        tabs.forEach(t => {
+          t.classList.remove('border-blue-600', 'text-blue-600');
+          t.classList.add('text-gray-600');
+        });
+        // 隱藏所有內容
+        contents.forEach(c => c.classList.add('hidden'));
+
+        // 顯示被點擊的內容
+        const target = tab.getAttribute('data-tab');
+        document.getElementById(target).classList.remove('hidden');
+
+        // 設定被點擊的 tab 樣式
+        tab.classList.add('border-blue-600', 'text-blue-600');
+        tab.classList.remove('text-gray-600');
+      });
+    });
+
+    // QR Code 產生邏輯
+    const productCodeInput = document.querySelector('#addInventoryForm input[name="productCode"]');
+    const serialNumberInput = document.querySelector('#addInventoryForm input[name="serialNumber"]');
+
+    function generateQRCodes() {
+      const productCode = productCodeInput.value.trim();
+      const serialNumber = serialNumberInput.value.trim();
+
+      if (productCode) {
+        QRCode.toCanvas(document.getElementById('productCodeQR'), productCode, { width: 150 }, function (error) {
+          if (error) console.error(error);
+        });
+      } else {
+        const canvas = document.getElementById('productCodeQR');
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+
+      if (serialNumber) {
+        QRCode.toCanvas(document.getElementById('serialNumberQR'), serialNumber, { width: 150 }, function (error) {
+          if (error) console.error(error);
+        });
+      } else {
+        const canvas = document.getElementById('serialNumberQR');
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+    }
+
+    productCodeInput.addEventListener('input', generateQRCodes);
+    serialNumberInput.addEventListener('input', generateQRCodes);
 
     // 新增庫存表單提交
     document.getElementById('addInventoryForm').addEventListener('submit', async e => {
@@ -87,6 +157,8 @@
       if (result.success) {
         form.reset();
         document.getElementById('addInventoryMsg').textContent = '新增庫存成功！';
+        // 清除QR碼
+        generateQRCodes();
       } else {
         document.getElementById('addInventoryMsg').textContent = '錯誤：' + (result.error || '新增失敗');
       }
@@ -155,14 +227,13 @@
       html5QrcodeScanner.clear();
     }
 
-    let html5QrcodeScanner = new Html5Qrcode("qr-reader");
-    html5QrcodeScanner.start(
-      { facingMode: "environment" },
-      { fps: 10, qrbox: 250 },
-      onScanSuccess
-    ).catch(err => {
-      console.warn('QR scanner error:', err);
-    });
+    function onScanFailure(error) {
+      // 忽略掃描失敗
+    }
+
+    let html5QrcodeScanner = new Html5QrcodeScanner(
+      "qr-reader", { fps: 10, qrbox: 250 }, false);
+    html5QrcodeScanner.render(onScanSuccess, onScanFailure);
   </script>
 </body>
 </html>
