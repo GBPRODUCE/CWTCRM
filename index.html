@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>詮威科技 助聽器庫存與訂單系統</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.7/minified/html5-qrcode.min.js"></script>
+</head>
+<body class="bg-gray-50 min-h-screen p-6 font-sans">
+  <div class="max-w-5xl mx-auto bg-white p-8 rounded shadow-lg">
+    <h1 class="text-3xl font-bold mb-6 text-center text-blue-700">詮威科技 助聽器庫存與訂單系統</h1>
+
+    <!-- 新增庫存 -->
+    <section class="mb-8">
+      <h2 class="text-xl font-semibold mb-3 border-b pb-1 border-blue-300">助聽器進貨登錄</h2>
+      <form id="addInventoryForm" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <input type="text" name="name" placeholder="品名" required class="input-field" />
+        <input type="text" name="productCode" placeholder="品號 (數字)" pattern="\d+" required class="input-field" />
+        <input type="text" name="serialNumber" placeholder="序號 (數字)" pattern="\d+" required class="input-field" />
+        <input type="number" name="price" placeholder="原價" step="0.01" min="0" required class="input-field" />
+        <input type="number" name="discount" placeholder="折扣 (0~1)" step="0.01" min="0" max="1" required class="input-field" />
+        <button type="submit" class="col-span-full bg-blue-600 text-white font-semibold py-2 rounded hover:bg-blue-700 transition">新增庫存</button>
+      </form>
+      <p id="addInventoryMsg" class="text-green-600 mt-2"></p>
+    </section>
+
+    <!-- 銷售出貨 -->
+    <section class="mb-8">
+      <h2 class="text-xl font-semibold mb-3 border-b pb-1 border-blue-300">助聽器銷售出貨</h2>
+      <form id="sellProductForm" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <input type="text" name="productCode" placeholder="品號" required class="input-field" />
+        <input type="text" name="serialNumber" placeholder="序號" required class="input-field" />
+        <input type="text" name="customerName" placeholder="客戶姓名" required class="input-field" />
+        <input type="text" name="customerContact" placeholder="聯絡方式" class="input-field" />
+        <input type="number" name="sellPrice" placeholder="售價" step="0.01" min="0" required class="input-field" />
+        <input type="text" name="handler" placeholder="負責人" class="input-field" />
+        <textarea name="note" placeholder="備註" rows="2" class="input-field col-span-full"></textarea>
+        <button type="submit" class="col-span-full bg-green-600 text-white font-semibold py-2 rounded hover:bg-green-700 transition">出貨確認</button>
+      </form>
+      <p id="sellProductMsg" class="text-green-600 mt-2"></p>
+    </section>
+
+    <!-- 搜尋與掃碼 -->
+    <section>
+      <h2 class="text-xl font-semibold mb-3 border-b pb-1 border-blue-300">助聽器查詢與掃描</h2>
+      <div class="flex gap-4 flex-col md:flex-row items-start">
+        <input type="text" id="searchCodeInput" placeholder="輸入品號或序號" class="input-field flex-grow" />
+        <button id="searchBtn" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition">查詢</button>
+      </div>
+      <div id="searchResult" class="mt-4 p-4 bg-gray-100 rounded border border-gray-300 hidden"></div>
+      <div class="mt-6">
+        <h3 class="font-semibold mb-2">條碼掃描</h3>
+        <div id="qr-reader" style="width:300px;"></div>
+      </div>
+    </section>
+  </div>
+
+  <style>
+    .input-field {
+      border: 1px solid #cbd5e0;
+      padding: 0.5rem;
+      border-radius: 0.375rem;
+      font-size: 1rem;
+    }
+    .input-field:focus {
+      outline: none;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.4);
+    }
+  </style>
+
+  <script>
+    const API_URL = 'YOUR_GAS_WEB_APP_URL_HERE'; // 替換成你部署的 GAS URL
+
+    // 新增庫存表單提交
+    document.getElementById('addInventoryForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const form = e.target;
+      const data = new URLSearchParams(new FormData(form));
+      data.append('action', 'addInventory');
+
+      const res = await fetch(`${API_URL}?${data.toString()}`);
+      const result = await res.json();
+
+      if (result.success) {
+        form.reset();
+        document.getElementById('addInventoryMsg').textContent = '新增庫存成功！';
+      } else {
+        document.getElementById('addInventoryMsg').textContent = '錯誤：' + (result.error || '新增失敗');
+      }
+    });
+
+    // 銷售出貨表單提交
+    document.getElementById('sellProductForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const form = e.target;
+      const data = new URLSearchParams(new FormData(form));
+      data.append('action', 'sellProduct');
+
+      const res = await fetch(`${API_URL}?${data.toString()}`);
+      const result = await res.json();
+
+      if (result.success) {
+        form.reset();
+        document.getElementById('sellProductMsg').textContent = '出貨成功！';
+      } else {
+        document.getElementById('sellProductMsg').textContent = '錯誤：' + (result.error || '出貨失敗');
+      }
+    });
+
+    // 查詢按鈕事件
+    document.getElementById('searchBtn').addEventListener('click', async () => {
+      const code = document.getElementById('searchCodeInput').value.trim();
+      if (!code) return alert('請輸入品號或序號');
+
+      const res = await fetch(`${API_URL}?action=searchByCode&code=${encodeURIComponent(code)}`);
+      const result = await res.json();
+
+      const resultDiv = document.getElementById('searchResult');
+      if (result.error) {
+        resultDiv.textContent = '查無資料';
+        resultDiv.classList.remove('hidden');
+        return;
+      }
+
+      let html = `<p><strong>品名：</strong>${result.inventory.name}</p>`;
+      html += `<p><strong>品號：</strong>${result.inventory.productCode}</p>`;
+      html += `<p><strong>序號：</strong>${result.inventory.serialNumber}</p>`;
+      html += `<p><strong>原價：</strong>${result.inventory.price}</p>`;
+      html += `<p><strong>折扣：</strong>${result.inventory.discount}</p>`;
+      html += `<p><strong>進價：</strong>${result.inventory.costPrice}</p>`;
+      html += `<p><strong>進貨時間：</strong>${result.inventory.stockInDate}</p>`;
+      html += `<p><strong>狀態：</strong>${result.inventory.status}</p>`;
+
+      if (result.inventory.status === '已售出' && result.order) {
+        html += '<hr class="my-2">';
+        html += `<p><strong>售出時間：</strong>${result.order.sellTime}</p>`;
+        html += `<p><strong>客戶姓名：</strong>${result.order.customerName}</p>`;
+        html += `<p><strong>聯絡方式：</strong>${result.order.customerContact}</p>`;
+        html += `<p><strong>售價：</strong>${result.order.sellPrice}</p>`;
+        html += `<p><strong>負責人：</strong>${result.order.handler}</p>`;
+        html += `<p><strong>備註：</strong>${result.order.note}</p>`;
+      }
+
+      resultDiv.innerHTML = html;
+      resultDiv.classList.remove('hidden');
+    });
+
+    // QR Code 掃描器
+    function onScanSuccess(decodedText, decodedResult) {
+      document.getElementById('searchCodeInput').value = decodedText;
+      document.getElementById('searchBtn').click();
+      html5QrcodeScanner.clear();
+    }
+
+    let html5QrcodeScanner = new Html5Qrcode("qr-reader");
+    html5QrcodeScanner.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: 250 },
+      onScanSuccess
+    ).catch(err => {
+      console.warn('QR scanner error:', err);
+    });
+  </script>
+</body>
+</html>
