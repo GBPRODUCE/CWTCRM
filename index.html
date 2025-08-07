@@ -8,7 +8,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/html5-qrcode@2.3.7/minified/html5-qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
-      <style>
+  <style>
     .input-field {
       border: 1px solid #cbd5e0;
       padding: 0.5rem;
@@ -26,7 +26,6 @@
   <div class="max-w-5xl mx-auto bg-white p-8 rounded shadow-lg">
     <h1 class="text-3xl font-bold mb-6 text-center text-blue-700">詮威科技 庫存與訂單系統</h1>
 
-    <!-- 分頁標籤 -->
     <nav class="mb-6 border-b border-gray-300">
       <ul class="flex space-x-4">
         <li><button class="tab-btn px-4 py-2 font-semibold border-b-2 border-blue-600 text-blue-600" data-tab="add-inventory">進貨登錄</button></li>
@@ -35,7 +34,6 @@
       </ul>
     </nav>
 
-    <!-- 分頁內容 -->
     <section id="add-inventory" class="tab-content">
       <form id="addInventoryForm" class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <input type="text" name="name" placeholder="品名" required class="input-field" />
@@ -87,29 +85,15 @@
     </section>
   </div>
   <script>
-    const API_URL = 'https://script.google.com/macros/s/AKfycbyTcCTVN7dtqpUIyneT9os7GDINXxjt_Zg43KBapw_WzAhlkDhdxCET6_7JbrGSxTAf/exec';
+    const API_URL = 'https://script.google.com/macros/s/AKfycbze65JKfm8kEfqTR0LyHULChE5uhZckkXAMDVmxriq0qd2RW45t1lPFkBetrJGBZqo/exec';
 
     // 分頁切換
-    const tabs = document.querySelectorAll('.tab-btn');
-    const contents = document.querySelectorAll('.tab-content');
-
-    tabs.forEach(tab => {
+    document.querySelectorAll('.tab-btn').forEach(tab => {
       tab.addEventListener('click', () => {
-        // 清除所有 tab 按鈕狀態
-        tabs.forEach(t => {
-          t.classList.remove('border-blue-600', 'text-blue-600');
-          t.classList.add('text-gray-600');
-        });
-        // 隱藏所有內容
-        contents.forEach(c => c.classList.add('hidden'));
-
-        // 顯示被點擊的內容
-        const target = tab.getAttribute('data-tab');
-        document.getElementById(target).classList.remove('hidden');
-
-        // 設定被點擊的 tab 樣式
+        document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('border-blue-600', 'text-blue-600'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
         tab.classList.add('border-blue-600', 'text-blue-600');
-        tab.classList.remove('text-gray-600');
+        document.getElementById(tab.dataset.tab).classList.remove('hidden');
       });
     });
 
@@ -121,25 +105,8 @@
       const productCode = productCodeInput.value.trim();
       const serialNumber = serialNumberInput.value.trim();
 
-      if (productCode) {
-        QRCode.toCanvas(document.getElementById('productCodeQR'), productCode, { width: 150 }, function (error) {
-          if (error) console.error(error);
-        });
-      } else {
-        const canvas = document.getElementById('productCodeQR');
-        const ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-      }
-
-      if (serialNumber) {
-        QRCode.toCanvas(document.getElementById('serialNumberQR'), serialNumber, { width: 150 }, function (error) {
-          if (error) console.error(error);
-        });
-      } else {
-        const canvas = document.getElementById('serialNumberQR');
-        const ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-      }
+      QRCode.toCanvas(document.getElementById('productCodeQR'), productCode || ' ', { width: 150 });
+      QRCode.toCanvas(document.getElementById('serialNumberQR'), serialNumber || ' ', { width: 150 });
     }
 
     productCodeInput.addEventListener('input', generateQRCodes);
@@ -148,92 +115,75 @@
     // 新增庫存表單提交
     document.getElementById('addInventoryForm').addEventListener('submit', async e => {
       e.preventDefault();
-      const form = e.target;
-      const data = new URLSearchParams(new FormData(form));
+      const data = new URLSearchParams(new FormData(e.target));
       data.append('action', 'addInventory');
-
-      const res = await fetch(`${API_URL}?${data.toString()}`);
+      const res = await fetch(`${API_URL}?${data}`);
       const result = await res.json();
-
+      document.getElementById('addInventoryMsg').textContent = result.success ? '新增庫存成功！' : '錯誤：' + (result.error || '新增失敗');
       if (result.success) {
-        form.reset();
-        document.getElementById('addInventoryMsg').textContent = '新增庫存成功！';
-        // 清除QR碼
+        e.target.reset();
         generateQRCodes();
-      } else {
-        document.getElementById('addInventoryMsg').textContent = '錯誤：' + (result.error || '新增失敗');
       }
     });
 
-    // 銷售出貨表單提交
+    // 銷售訂單提交
     document.getElementById('sellProductForm').addEventListener('submit', async e => {
       e.preventDefault();
-      const form = e.target;
-      const data = new URLSearchParams(new FormData(form));
+      const data = new URLSearchParams(new FormData(e.target));
       data.append('action', 'sellProduct');
-
-      const res = await fetch(`${API_URL}?${data.toString()}`);
+      const res = await fetch(`${API_URL}?${data}`);
       const result = await res.json();
-
-      if (result.success) {
-        form.reset();
-        document.getElementById('sellProductMsg').textContent = '出貨成功！';
-      } else {
-        document.getElementById('sellProductMsg').textContent = '錯誤：' + (result.error || '出貨失敗');
-      }
+      document.getElementById('sellProductMsg').textContent = result.success ? '出貨成功！' : '錯誤：' + (result.error || '出貨失敗');
+      if (result.success) e.target.reset();
     });
 
-    // 查詢按鈕事件
+    // 查詢
     document.getElementById('searchBtn').addEventListener('click', async () => {
       const code = document.getElementById('searchCodeInput').value.trim();
       if (!code) return alert('請輸入品號或序號');
-
       const res = await fetch(`${API_URL}?action=searchByCode&code=${encodeURIComponent(code)}`);
       const result = await res.json();
-
       const resultDiv = document.getElementById('searchResult');
-      if (result.error) {
+      if (result.error || !result.results) {
         resultDiv.textContent = '查無資料';
         resultDiv.classList.remove('hidden');
         return;
       }
-
-      let html = `<p><strong>品名：</strong>${result.inventory.name}</p>`;
-      html += `<p><strong>品號：</strong>${result.inventory.productCode}</p>`;
-      html += `<p><strong>序號：</strong>${result.inventory.serialNumber}</p>`;
-      html += `<p><strong>原價：</strong>${result.inventory.price}</p>`;
-      html += `<p><strong>折扣：</strong>${result.inventory.discount}</p>`;
-      html += `<p><strong>進價：</strong>${result.inventory.costPrice}</p>`;
-      html += `<p><strong>進貨時間：</strong>${result.inventory.stockInDate}</p>`;
-      html += `<p><strong>狀態：</strong>${result.inventory.status}</p>`;
-
-      if (result.inventory.status === '已售出' && result.order) {
-        html += '<hr class="my-2">';
-        html += `<p><strong>售出時間：</strong>${result.order.sellTime}</p>`;
-        html += `<p><strong>客戶姓名：</strong>${result.order.customerName}</p>`;
-        html += `<p><strong>聯絡方式：</strong>${result.order.customerContact}</p>`;
-        html += `<p><strong>售價：</strong>${result.order.sellPrice}</p>`;
-        html += `<p><strong>負責人：</strong>${result.order.handler}</p>`;
-        html += `<p><strong>備註：</strong>${result.order.note}</p>`;
-      }
-
+      let html = '';
+      result.results.forEach((item, index) => {
+        html += `<div class="mb-4 p-4 border rounded bg-white">
+          <h4 class="font-bold mb-2">結果 ${index + 1}</h4>
+          <p><strong>品名：</strong>${item.inventory.name}</p>
+          <p><strong>品號：</strong>${item.inventory.productCode}</p>
+          <p><strong>序號：</strong>${item.inventory.serialNumber}</p>
+          <p><strong>原價：</strong>${item.inventory.price}</p>
+          <p><strong>折扣：</strong>${item.inventory.discount}</p>
+          <p><strong>進價：</strong>${item.inventory.costPrice}</p>
+          <p><strong>進貨時間：</strong>${item.inventory.stockInDate}</p>
+          <p><strong>狀態：</strong>${item.inventory.status}</p>`;
+        if (item.inventory.status === '已售出' && item.order) {
+          html += `<hr class="my-2">
+            <p><strong>售出時間：</strong>${item.order.sellTime}</p>
+            <p><strong>客戶姓名：</strong>${item.order.customerName}</p>
+            <p><strong>聯絡方式：</strong>${item.order.customerContact}</p>
+            <p><strong>售價：</strong>${item.order.sellPrice}</p>
+            <p><strong>負責人：</strong>${item.order.handler}</p>
+            <p><strong>備註：</strong>${item.order.note}</p>`;
+        }
+        html += '</div>';
+      });
       resultDiv.innerHTML = html;
       resultDiv.classList.remove('hidden');
     });
 
-    // QR Code 掃描器
-    function onScanSuccess(decodedText, decodedResult) {
+    // 條碼掃描
+    function onScanSuccess(decodedText) {
       document.getElementById('searchCodeInput').value = decodedText;
       document.getElementById('searchBtn').click();
       html5QrcodeScanner.clear();
     }
-
-    function onScanFailure(error) {
-      // 忽略掃描失敗
-    }
-
-    let html5QrcodeScanner = new Html5QrcodeScanner(
-      "qr-reader", { fps: 10, qrbox: 250 }, false);
+    function onScanFailure() {}
+    let html5QrcodeScanner = new Html5QrcodeScanner("qr-reader", { fps: 10, qrbox: 250 }, false);
     html5QrcodeScanner.render(onScanSuccess, onScanFailure);
   </script>
 </body>
