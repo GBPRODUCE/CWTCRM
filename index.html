@@ -1,190 +1,236 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-TW">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="icon" href="CWT.png" type="image/x-icon">
-  <title>詮威科技 庫存與訂單系統</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/html5-qrcode@2.3.7/minified/html5-qrcode.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
-  <style>
-    .input-field {
-      border: 1px solid #cbd5e0;
-      padding: 0.5rem;
-      border-radius: 0.375rem;
-      font-size: 1rem;
-    }
-    .input-field:focus {
-      outline: none;
-      border-color: #2563eb;
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.4);
-    }
-  </style>
+<meta charset="UTF-8">
+<title>詮威科技庫存與訂單系統</title>
+<style>
+  body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin:0; }
+  header { background-color: #003366; color: white; padding: 10px 20px; }
+  h1 { margin: 0; font-size: 24px; }
+  nav { display: flex; background-color: #004080; }
+  nav button { flex: 1; padding: 10px; border: none; background: #004080; color: white; cursor: pointer; font-size: 16px; }
+  nav button.active { background-color: #0066cc; }
+  .tab-content { display: none; padding: 20px; background: white; margin: 10px; border-radius: 5px; box-shadow: 0 0 5px rgba(0,0,0,0.1); }
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  table, th, td { border: 1px solid #ccc; }
+  th, td { padding: 8px; text-align: center; }
+  th { background-color: #f2f2f2; }
+  input, select, button { padding: 5px; margin: 5px 0; }
+  .form-group { margin-bottom: 10px; }
+</style>
 </head>
-<body class="bg-gray-50 min-h-screen p-6 font-sans">
-  <div class="max-w-5xl mx-auto bg-white p-8 rounded shadow-lg">
-    <h1 class="text-3xl font-bold mb-6 text-center text-blue-700">詮威科技 庫存與訂單系統</h1>
+<body>
 
-    <nav class="mb-6 border-b border-gray-300">
-      <ul class="flex space-x-4">
-        <li><button class="tab-btn px-4 py-2 font-semibold border-b-2 border-blue-600 text-blue-600" data-tab="add-inventory">進貨登錄</button></li>
-        <li><button class="tab-btn px-4 py-2 font-semibold text-gray-600 hover:text-blue-600" data-tab="sell-product">銷售訂單</button></li>
-        <li><button class="tab-btn px-4 py-2 font-semibold text-gray-600 hover:text-blue-600" data-tab="search-scan">查詢掃描</button></li>
-      </ul>
-    </nav>
+<header>
+  <h1>詮威科技有限公司 - 庫存與訂單系統</h1>
+</header>
 
-    <section id="add-inventory" class="tab-content">
-      <form id="addInventoryForm" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <input type="text" name="name" placeholder="品名" required class="input-field" />
-        <input type="text" name="productCode" placeholder="品號 (數字)" pattern="\d+" required class="input-field" />
-        <input type="text" name="serialNumber" placeholder="序號 (數字)" pattern="\d+" required class="input-field" />
-        <input type="number" name="price" placeholder="原價" step="0.01" min="0" required class="input-field" />
-        <input type="number" name="discount" placeholder="折扣 (0~1)" step="0.01" min="0" max="1" required class="input-field" />
-        <button type="submit" class="col-span-full bg-blue-600 text-white font-semibold py-2 rounded hover:bg-blue-700 transition">新增庫存</button>
-      </form>
+<nav>
+  <button onclick="showTab('addInventory')" class="active">新增庫存</button>
+  <button onclick="showTab('sellProduct')">銷售產品</button>
+  <button onclick="showTab('searchProduct')">條碼查詢</button>
+  <button onclick="showTab('inventoryList')">庫存列表</button>
+  <button onclick="showTab('orderList')">訂單列表</button>
+</nav>
 
-      <div class="mt-4 grid grid-cols-2 gap-4">
-        <div>
-          <p class="font-semibold mb-1">品號 QR Code</p>
-          <canvas id="productCodeQR"></canvas>
-        </div>
-        <div>
-          <p class="font-semibold mb-1">序號 QR Code</p>
-          <canvas id="serialNumberQR"></canvas>
-        </div>
-      </div>
+<!-- 新增庫存 -->
+<div id="addInventory" class="tab-content" style="display:block;">
+  <h2>新增庫存</h2>
+  <div class="form-group"><label>品名：<input type="text" id="inv_name"></label></div>
+  <div class="form-group"><label>品號：<input type="text" id="inv_code"></label></div>
+  <div class="form-group"><label>序號：<input type="text" id="inv_serial"></label></div>
+  <div class="form-group"><label>原價：<input type="number" id="inv_price"></label></div>
+  <div class="form-group"><label>折扣：<input type="number" id="inv_discount" step="0.01" value="1"></label></div>
+  <button onclick="addInventory()">送出</button>
+</div>
 
-      <p id="addInventoryMsg" class="text-green-600 mt-2"></p>
-    </section>
+<!-- 銷售產品 -->
+<div id="sellProduct" class="tab-content">
+  <h2>銷售產品</h2>
+  <div class="form-group"><label>品號：<input type="text" id="sell_code"></label></div>
+  <div class="form-group"><label>序號：<input type="text" id="sell_serial"></label></div>
+  <div class="form-group"><label>客戶姓名：<input type="text" id="sell_customer"></label></div>
+  <div class="form-group"><label>聯絡方式：<input type="text" id="sell_contact"></label></div>
+  <div class="form-group"><label>售價：<input type="number" id="sell_price"></label></div>
+  <div class="form-group"><label>負責人：<input type="text" id="sell_handler"></label></div>
+  <div class="form-group"><label>備註：<input type="text" id="sell_note"></label></div>
+  <button onclick="sellProduct()">送出</button>
+</div>
 
-    <section id="sell-product" class="tab-content hidden">
-      <form id="sellProductForm" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <input type="text" name="productCode" placeholder="品號" required class="input-field" />
-        <input type="text" name="serialNumber" placeholder="序號" required class="input-field" />
-        <input type="text" name="customerName" placeholder="客戶姓名" required class="input-field" />
-        <input type="text" name="customerContact" placeholder="聯絡方式" class="input-field" />
-        <input type="number" name="sellPrice" placeholder="售價" step="0.01" min="0" required class="input-field" />
-        <input type="text" name="handler" placeholder="負責人" class="input-field" />
-        <textarea name="note" placeholder="備註" rows="2" class="input-field col-span-full"></textarea>
-        <button type="submit" class="col-span-full bg-green-600 text-white font-semibold py-2 rounded hover:bg-green-700 transition">訂單建立</button>
-      </form>
-      <p id="sellProductMsg" class="text-green-600 mt-2"></p>
-    </section>
+<!-- 條碼查詢 -->
+<div id="searchProduct" class="tab-content">
+  <h2>條碼查詢</h2>
+  <div class="form-group"><label>輸入品號或序號：<input type="text" id="search_code"></label></div>
+  <button onclick="searchProduct()">查詢</button>
+  <div id="searchResults"></div>
+</div>
 
-    <section id="search-scan" class="tab-content hidden">
-      <div class="flex gap-4 flex-col md:flex-row items-start">
-        <input type="text" id="searchCodeInput" placeholder="輸入品號或序號" class="input-field flex-grow" />
-        <button id="searchBtn" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition">查詢</button>
-      </div>
-      <div id="searchResult" class="mt-4 p-4 bg-gray-100 rounded border border-gray-300 hidden"></div>
-      <div class="mt-6">
-        <h3 class="font-semibold mb-2">條碼掃描</h3>
-        <div id="qr-reader" style="width:300px;"></div>
-      </div>
-    </section>
-  </div>
-  <script>
-    const API_URL = 'https://script.google.com/macros/s/AKfycbzKAZDS575QJPFcGifBtPayaVIG_VqPuCbdUUQQ1PEJRQOkf4Fr63AysjVcEDDdcYl_/exec';
+<!-- 庫存列表 -->
+<div id="inventoryList" class="tab-content">
+  <h2>庫存列表</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>進貨時間</th>
+        <th>品名</th>
+        <th>品號</th>
+        <th>序號</th>
+        <th>原價</th>
+        <th>折扣</th>
+        <th>進價</th>
+        <th>狀態</th>
+      </tr>
+    </thead>
+    <tbody id="inventoryTable"></tbody>
+  </table>
+</div>
 
-    // 分頁切換
-    document.querySelectorAll('.tab-btn').forEach(tab => {
-      tab.addEventListener('click', () => {
-        document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('border-blue-600', 'text-blue-600'));
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
-        tab.classList.add('border-blue-600', 'text-blue-600');
-        document.getElementById(tab.dataset.tab).classList.remove('hidden');
-      });
-    });
+<!-- 訂單列表 -->
+<div id="orderList" class="tab-content">
+  <h2>訂單列表</h2>
+  <label>選擇月份：<input type="month" id="orderMonth"></label>
+  <button onclick="loadOrders()">查詢</button>
+  <h3 id="orderTotal"></h3>
+  <table>
+    <thead>
+      <tr>
+        <th>銷售時間</th>
+        <th>品號</th>
+        <th>序號</th>
+        <th>客戶姓名</th>
+        <th>聯絡方式</th>
+        <th>售價</th>
+        <th>負責人</th>
+        <th>備註</th>
+      </tr>
+    </thead>
+    <tbody id="orderTable"></tbody>
+  </table>
+</div>
 
-    // QR Code 產生邏輯
-    const productCodeInput = document.querySelector('#addInventoryForm input[name="productCode"]');
-    const serialNumberInput = document.querySelector('#addInventoryForm input[name="serialNumber"]');
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbw2zT3Ri55NM0emdlp4GyyGFuKibWyUOVy6nOedjBqz1k_LXtQMU9eN1qqJ4iC6neyB/exec";
 
-    function generateQRCodes() {
-      const productCode = productCodeInput.value.trim();
-      const serialNumber = serialNumberInput.value.trim();
+// 切換分頁
+function showTab(tabId) {
+  document.querySelectorAll('.tab-content').forEach(tab => tab.style.display = 'none');
+  document.querySelectorAll('nav button').forEach(btn => btn.classList.remove('active'));
+  document.getElementById(tabId).style.display = 'block';
+  document.querySelector(`nav button[onclick="showTab('${tabId}')"]`).classList.add('active');
 
-      QRCode.toCanvas(document.getElementById('productCodeQR'), productCode || ' ', { width: 150 });
-      QRCode.toCanvas(document.getElementById('serialNumberQR'), serialNumber || ' ', { width: 150 });
-    }
+  if (tabId === "inventoryList") loadInventory();
+  if (tabId === "orderList") loadOrders();
+}
 
-    productCodeInput.addEventListener('input', generateQRCodes);
-    serialNumberInput.addEventListener('input', generateQRCodes);
+// 新增庫存
+function addInventory() {
+  const params = new URLSearchParams({
+    action: "addInventory",
+    name: document.getElementById("inv_name").value,
+    code: document.getElementById("inv_code").value,
+    serial: document.getElementById("inv_serial").value,
+    price: document.getElementById("inv_price").value,
+    discount: document.getElementById("inv_discount").value
+  });
+  fetch(`${API_URL}?${params}`).then(res => res.json()).then(alert);
+}
 
-    // 新增庫存表單提交
-    document.getElementById('addInventoryForm').addEventListener('submit', async e => {
-      e.preventDefault();
-      const data = new URLSearchParams(new FormData(e.target));
-      data.append('action', 'addInventory');
-      const res = await fetch(`${API_URL}?${data}`);
-      const result = await res.json();
-      document.getElementById('addInventoryMsg').textContent = result.success ? '新增庫存成功！' : '錯誤：' + (result.error || '新增失敗');
-      if (result.success) {
-        e.target.reset();
-        generateQRCodes();
+// 銷售產品
+function sellProduct() {
+  const params = new URLSearchParams({
+    action: "sellProduct",
+    code: document.getElementById("sell_code").value,
+    serial: document.getElementById("sell_serial").value,
+    customerName: document.getElementById("sell_customer").value,
+    customerContact: document.getElementById("sell_contact").value,
+    sellPrice: document.getElementById("sell_price").value,
+    handler: document.getElementById("sell_handler").value,
+    note: document.getElementById("sell_note").value
+  });
+  fetch(`${API_URL}?${params}`).then(res => res.json()).then(alert);
+}
+
+// 條碼查詢
+function searchProduct() {
+  const code = document.getElementById("search_code").value;
+  fetch(`${API_URL}?action=searchByCode&code=${code}`)
+    .then(res => res.json())
+    .then(data => {
+      const container = document.getElementById("searchResults");
+      container.innerHTML = "";
+      if (data.results && data.results.length > 0) {
+        data.results.forEach(item => {
+          container.innerHTML += `
+            <div style="border:1px solid #ccc; padding:10px; margin:5px;">
+              <p><b>進貨時間：</b>${item.inventory.stockInDate}</p>
+              <p><b>品名：</b>${item.inventory.name}</p>
+              <p><b>品號：</b>${item.inventory.productCode}</p>
+              <p><b>序號：</b>${item.inventory.serialNumber}</p>
+              <p><b>售出時間：</b>${item.order ? item.order.sellTime : '尚未售出'}</p>
+            </div>
+          `;
+        });
+      } else {
+        container.innerHTML = "<p>查無資料</p>";
       }
     });
+}
 
-    // 銷售訂單提交
-    document.getElementById('sellProductForm').addEventListener('submit', async e => {
-      e.preventDefault();
-      const data = new URLSearchParams(new FormData(e.target));
-      data.append('action', 'sellProduct');
-      const res = await fetch(`${API_URL}?${data}`);
-      const result = await res.json();
-      document.getElementById('sellProductMsg').textContent = result.success ? '出貨成功！' : '錯誤：' + (result.error || '出貨失敗');
-      if (result.success) e.target.reset();
-    });
-
-    // 查詢
-    document.getElementById('searchBtn').addEventListener('click', async () => {
-      const code = document.getElementById('searchCodeInput').value.trim();
-      if (!code) return alert('請輸入品號或序號');
-      const res = await fetch(`${API_URL}?action=searchByCode&code=${encodeURIComponent(code)}`);
-      const result = await res.json();
-      const resultDiv = document.getElementById('searchResult');
-      if (result.error || !result.results) {
-        resultDiv.textContent = '查無資料';
-        resultDiv.classList.remove('hidden');
-        return;
-      }
-      let html = '';
-      result.results.forEach((item, index) => {
-        html += `<div class="mb-4 p-4 border rounded bg-white">
-          <h4 class="font-bold mb-2">結果 ${index + 1}</h4>
-          <p><strong>品名：</strong>${item.inventory.name}</p>
-          <p><strong>品號：</strong>${item.inventory.productCode}</p>
-          <p><strong>序號：</strong>${item.inventory.serialNumber}</p>
-          <p><strong>原價：</strong>${item.inventory.price}</p>
-          <p><strong>折扣：</strong>${item.inventory.discount}</p>
-          <p><strong>進價：</strong>${item.inventory.costPrice}</p>
-          <p><strong>進貨時間：</strong>${item.inventory.stockInDate}</p>
-          <p><strong>狀態：</strong>${item.inventory.status}</p>`;
-        if (item.inventory.status === '已售出' && item.order) {
-          html += `<hr class="my-2">
-            <p><strong>售出時間：</strong>${item.order.sellTime}</p>
-            <p><strong>客戶姓名：</strong>${item.order.customerName}</p>
-            <p><strong>聯絡方式：</strong>${item.order.customerContact}</p>
-            <p><strong>售價：</strong>${item.order.sellPrice}</p>
-            <p><strong>負責人：</strong>${item.order.handler}</p>
-            <p><strong>備註：</strong>${item.order.note}</p>`;
-        }
-        html += '</div>';
+// 載入庫存
+function loadInventory() {
+  fetch(`${API_URL}?action=getInventory`)
+    .then(res => res.json())
+    .then(data => {
+      const tbody = document.getElementById("inventoryTable");
+      tbody.innerHTML = "";
+      data.inventories.forEach(item => {
+        tbody.innerHTML += `
+          <tr>
+            <td>${item.stockInDate}</td>
+            <td>${item.name}</td>
+            <td>${item.productCode}</td>
+            <td>${item.serialNumber}</td>
+            <td>${item.price}</td>
+            <td>${item.discount}</td>
+            <td>${item.costPrice}</td>
+            <td>${item.status}</td>
+          </tr>
+        `;
       });
-      resultDiv.innerHTML = html;
-      resultDiv.classList.remove('hidden');
     });
+}
 
-    // 條碼掃描
-    function onScanSuccess(decodedText) {
-      document.getElementById('searchCodeInput').value = decodedText;
-      document.getElementById('searchBtn').click();
-      html5QrcodeScanner.clear();
-    }
-    function onScanFailure() {}
-    let html5QrcodeScanner = new Html5QrcodeScanner("qr-reader", { fps: 10, qrbox: 250 }, false);
-    html5QrcodeScanner.render(onScanSuccess, onScanFailure);
-  </script>
+// 載入訂單
+function loadOrders() {
+  const month = document.getElementById("orderMonth").value || new Date().toISOString().slice(0,7);
+  fetch(`${API_URL}?action=getOrdersByMonth&month=${month}`)
+    .then(res => res.json())
+    .then(data => {
+      const tbody = document.getElementById("orderTable");
+      tbody.innerHTML = "";
+      data.orders.forEach(order => {
+        tbody.innerHTML += `
+          <tr>
+            <td>${order.sellTime}</td>
+            <td>${order.productCode}</td>
+            <td>${order.serialNumber}</td>
+            <td>${order.customerName}</td>
+            <td>${order.customerContact}</td>
+            <td>${order.sellPrice}</td>
+            <td>${order.handler}</td>
+            <td>${order.note}</td>
+          </tr>
+        `;
+      });
+      document.getElementById("orderTotal").innerText = `該月份總銷售額：${data.totalSales}`;
+    });
+}
+
+// 預設設定當月
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("orderMonth").value = new Date().toISOString().slice(0,7);
+});
+</script>
+
 </body>
 </html>
