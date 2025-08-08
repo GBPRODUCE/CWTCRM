@@ -1,236 +1,166 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<title>詮威科技庫存與訂單系統</title>
+<title>詮威科技 - 庫存與訂單系統</title>
 <style>
-  body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin:0; }
-  header { background-color: #003366; color: white; padding: 10px 20px; }
-  h1 { margin: 0; font-size: 24px; }
-  nav { display: flex; background-color: #004080; }
-  nav button { flex: 1; padding: 10px; border: none; background: #004080; color: white; cursor: pointer; font-size: 16px; }
-  nav button.active { background-color: #0066cc; }
-  .tab-content { display: none; padding: 20px; background: white; margin: 10px; border-radius: 5px; box-shadow: 0 0 5px rgba(0,0,0,0.1); }
-  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-  table, th, td { border: 1px solid #ccc; }
-  th, td { padding: 8px; text-align: center; }
-  th { background-color: #f2f2f2; }
-  input, select, button { padding: 5px; margin: 5px 0; }
-  .form-group { margin-bottom: 10px; }
+body { font-family: "Segoe UI", sans-serif; margin: 0; background: #f4f6f8; }
+header { background: #004b87; color: white; padding: 10px 20px; font-size: 20px; }
+nav { display: flex; background: #eaf0f6; }
+nav button { flex: 1; padding: 10px; border: none; background: #eaf0f6; cursor: pointer; font-size: 15px; }
+nav button.active { background: white; border-bottom: 3px solid #004b87; }
+.page { display: none; padding: 20px; background: white; margin: 10px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
+.inventory-group { margin-bottom: 10px; border: 1px solid #ddd; border-radius: 6px; }
+.group-header { padding: 10px; background: #f9fafb; cursor: pointer; }
+.group-header:hover { background: #eef5ff; }
+.group-details { display: none; padding: 10px; }
+.group-details table { width: 100%; border-collapse: collapse; }
+.group-details th, .group-details td { padding: 6px; border-bottom: 1px solid #eee; }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 6px; border-bottom: 1px solid #ccc; text-align: left; }
+.total { margin-top: 10px; font-weight: bold; }
 </style>
 </head>
 <body>
-
-<header>
-  <h1>詮威科技有限公司 - 庫存與訂單系統</h1>
-</header>
-
+<header>詮威科技有限公司 - 庫存與訂單系統</header>
 <nav>
-  <button onclick="showTab('addInventory')" class="active">新增庫存</button>
-  <button onclick="showTab('sellProduct')">銷售產品</button>
-  <button onclick="showTab('searchProduct')">條碼查詢</button>
-  <button onclick="showTab('inventoryList')">庫存列表</button>
-  <button onclick="showTab('orderList')">訂單列表</button>
+  <button onclick="showPage('addInventory')">新增庫存</button>
+  <button onclick="showPage('sellProduct')">銷售</button>
+  <button onclick="showPage('searchPage')">查詢</button>
+  <button onclick="showPage('inventoryList')">庫存列表</button>
+  <button onclick="showPage('orderList')">訂單列表</button>
 </nav>
 
 <!-- 新增庫存 -->
-<div id="addInventory" class="tab-content" style="display:block;">
+<div id="addInventory" class="page">
   <h2>新增庫存</h2>
-  <div class="form-group"><label>品名：<input type="text" id="inv_name"></label></div>
-  <div class="form-group"><label>品號：<input type="text" id="inv_code"></label></div>
-  <div class="form-group"><label>序號：<input type="text" id="inv_serial"></label></div>
-  <div class="form-group"><label>原價：<input type="number" id="inv_price"></label></div>
-  <div class="form-group"><label>折扣：<input type="number" id="inv_discount" step="0.01" value="1"></label></div>
-  <button onclick="addInventory()">送出</button>
+  <input id="name" placeholder="品名"><br>
+  <input id="productCode" placeholder="品號"><br>
+  <input id="serialNumber" placeholder="序號"><br>
+  <input id="price" placeholder="原價"><br>
+  <input id="discount" placeholder="折扣"><br>
+  <button onclick="addInventoryItem()">新增</button>
 </div>
 
-<!-- 銷售產品 -->
-<div id="sellProduct" class="tab-content">
+<!-- 銷售 -->
+<div id="sellProduct" class="page">
   <h2>銷售產品</h2>
-  <div class="form-group"><label>品號：<input type="text" id="sell_code"></label></div>
-  <div class="form-group"><label>序號：<input type="text" id="sell_serial"></label></div>
-  <div class="form-group"><label>客戶姓名：<input type="text" id="sell_customer"></label></div>
-  <div class="form-group"><label>聯絡方式：<input type="text" id="sell_contact"></label></div>
-  <div class="form-group"><label>售價：<input type="number" id="sell_price"></label></div>
-  <div class="form-group"><label>負責人：<input type="text" id="sell_handler"></label></div>
-  <div class="form-group"><label>備註：<input type="text" id="sell_note"></label></div>
-  <button onclick="sellProduct()">送出</button>
+  <input id="sell_productCode" placeholder="品號"><br>
+  <input id="sell_serialNumber" placeholder="序號"><br>
+  <input id="customerName" placeholder="客戶名稱"><br>
+  <input id="customerContact" placeholder="客戶聯絡"><br>
+  <input id="sellPrice" placeholder="售價"><br>
+  <input id="handler" placeholder="經手人"><br>
+  <input id="note" placeholder="備註"><br>
+  <button onclick="sellProductItem()">銷售</button>
 </div>
 
-<!-- 條碼查詢 -->
-<div id="searchProduct" class="tab-content">
-  <h2>條碼查詢</h2>
-  <div class="form-group"><label>輸入品號或序號：<input type="text" id="search_code"></label></div>
-  <button onclick="searchProduct()">查詢</button>
-  <div id="searchResults"></div>
+<!-- 查詢 -->
+<div id="searchPage" class="page">
+  <h2>查詢</h2>
+  <input id="searchCode" placeholder="輸入品號或序號">
+  <button onclick="searchCodeItem()">查詢</button>
+  <div id="searchResult"></div>
 </div>
 
 <!-- 庫存列表 -->
-<div id="inventoryList" class="tab-content">
+<div id="inventoryList" class="page">
   <h2>庫存列表</h2>
-  <table>
-    <thead>
-      <tr>
-        <th>進貨時間</th>
-        <th>品名</th>
-        <th>品號</th>
-        <th>序號</th>
-        <th>原價</th>
-        <th>折扣</th>
-        <th>進價</th>
-        <th>狀態</th>
-      </tr>
-    </thead>
-    <tbody id="inventoryTable"></tbody>
-  </table>
+  <div id="inventoryContainer"></div>
 </div>
 
 <!-- 訂單列表 -->
-<div id="orderList" class="tab-content">
+<div id="orderList" class="page">
   <h2>訂單列表</h2>
-  <label>選擇月份：<input type="month" id="orderMonth"></label>
+  <input id="orderMonth" type="month">
   <button onclick="loadOrders()">查詢</button>
-  <h3 id="orderTotal"></h3>
-  <table>
-    <thead>
-      <tr>
-        <th>銷售時間</th>
-        <th>品號</th>
-        <th>序號</th>
-        <th>客戶姓名</th>
-        <th>聯絡方式</th>
-        <th>售價</th>
-        <th>負責人</th>
-        <th>備註</th>
-      </tr>
-    </thead>
-    <tbody id="orderTable"></tbody>
-  </table>
+  <div id="orderContainer"></div>
+  <div class="total" id="orderTotal"></div>
 </div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbw2zT3Ri55NM0emdlp4GyyGFuKibWyUOVy6nOedjBqz1k_LXtQMU9eN1qqJ4iC6neyB/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbx_Hsx-HNKyE6Ha1Jex7DlLwXHzLionOMPTHYnSjiQqtidLTIlzbYL7TcmsNFp_zv8m/exec";
 
-// 切換分頁
-function showTab(tabId) {
-  document.querySelectorAll('.tab-content').forEach(tab => tab.style.display = 'none');
-  document.querySelectorAll('nav button').forEach(btn => btn.classList.remove('active'));
-  document.getElementById(tabId).style.display = 'block';
-  document.querySelector(`nav button[onclick="showTab('${tabId}')"]`).classList.add('active');
-
-  if (tabId === "inventoryList") loadInventory();
-  if (tabId === "orderList") loadOrders();
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).style.display = 'block';
+  event.target.classList.add('active');
+  if (id === 'inventoryList') loadInventory();
+  if (id === 'orderList') loadOrders();
 }
 
-// 新增庫存
-function addInventory() {
+function addInventoryItem() {
   const params = new URLSearchParams({
-    action: "addInventory",
-    name: document.getElementById("inv_name").value,
-    code: document.getElementById("inv_code").value,
-    serial: document.getElementById("inv_serial").value,
-    price: document.getElementById("inv_price").value,
-    discount: document.getElementById("inv_discount").value
+    action: 'addInventory',
+    name: name.value,
+    productCode: productCode.value,
+    serialNumber: serialNumber.value,
+    price: price.value,
+    discount: discount.value
   });
-  fetch(`${API_URL}?${params}`).then(res => res.json()).then(alert);
+  fetch(API_URL + '?' + params).then(r => r.json()).then(d => alert(d.success ? '新增成功' : '失敗'));
 }
 
-// 銷售產品
-function sellProduct() {
+function sellProductItem() {
   const params = new URLSearchParams({
-    action: "sellProduct",
-    code: document.getElementById("sell_code").value,
-    serial: document.getElementById("sell_serial").value,
-    customerName: document.getElementById("sell_customer").value,
-    customerContact: document.getElementById("sell_contact").value,
-    sellPrice: document.getElementById("sell_price").value,
-    handler: document.getElementById("sell_handler").value,
-    note: document.getElementById("sell_note").value
+    action: 'sellProduct',
+    productCode: sell_productCode.value,
+    serialNumber: sell_serialNumber.value,
+    customerName: customerName.value,
+    customerContact: customerContact.value,
+    sellPrice: sellPrice.value,
+    handler: handler.value,
+    note: note.value
   });
-  fetch(`${API_URL}?${params}`).then(res => res.json()).then(alert);
+  fetch(API_URL + '?' + params).then(r => r.json()).then(d => alert(d.success ? '銷售成功' : '失敗'));
 }
 
-// 條碼查詢
-function searchProduct() {
-  const code = document.getElementById("search_code").value;
-  fetch(`${API_URL}?action=searchByCode&code=${code}`)
-    .then(res => res.json())
-    .then(data => {
-      const container = document.getElementById("searchResults");
-      container.innerHTML = "";
-      if (data.results && data.results.length > 0) {
-        data.results.forEach(item => {
-          container.innerHTML += `
-            <div style="border:1px solid #ccc; padding:10px; margin:5px;">
-              <p><b>進貨時間：</b>${item.inventory.stockInDate}</p>
-              <p><b>品名：</b>${item.inventory.name}</p>
-              <p><b>品號：</b>${item.inventory.productCode}</p>
-              <p><b>序號：</b>${item.inventory.serialNumber}</p>
-              <p><b>售出時間：</b>${item.order ? item.order.sellTime : '尚未售出'}</p>
-            </div>
-          `;
-        });
-      } else {
-        container.innerHTML = "<p>查無資料</p>";
-      }
+function searchCodeItem() {
+  fetch(API_URL + '?action=searchByCode&code=' + searchCode.value)
+    .then(r => r.json()).then(data => {
+      const div = document.getElementById('searchResult');
+      div.innerHTML = JSON.stringify(data, null, 2);
     });
 }
 
-// 載入庫存
 function loadInventory() {
-  fetch(`${API_URL}?action=getInventory`)
-    .then(res => res.json())
-    .then(data => {
-      const tbody = document.getElementById("inventoryTable");
-      tbody.innerHTML = "";
-      data.inventories.forEach(item => {
-        tbody.innerHTML += `
-          <tr>
-            <td>${item.stockInDate}</td>
-            <td>${item.name}</td>
-            <td>${item.productCode}</td>
-            <td>${item.serialNumber}</td>
-            <td>${item.price}</td>
-            <td>${item.discount}</td>
-            <td>${item.costPrice}</td>
-            <td>${item.status}</td>
-          </tr>
-        `;
+  fetch(API_URL + '?action=getInventory')
+    .then(r => r.json()).then(data => {
+      const c = document.getElementById('inventoryContainer');
+      c.innerHTML = '';
+      data.forEach(g => {
+        const wrap = document.createElement('div');
+        wrap.className = 'inventory-group';
+        const header = document.createElement('div');
+        header.className = 'group-header';
+        header.textContent = `${g.name}（品號:${g.productCode}）- 數量:${g.count}`;
+        const detail = document.createElement('div');
+        detail.className = 'group-details';
+        detail.innerHTML = `<table><tr><th>序號</th><th>價格</th><th>折扣</th><th>成本</th><th>入庫日期</th></tr>
+          ${g.items.map(i => `<tr><td>${i.serialNumber}</td><td>${i.price}</td><td>${i.discount}</td><td>${i.costPrice}</td><td>${i.stockInDate}</td></tr>`).join('')}</table>`;
+        header.onclick = () => {
+          detail.style.display = detail.style.display === 'none' ? 'block' : 'none';
+        };
+        wrap.appendChild(header);
+        wrap.appendChild(detail);
+        c.appendChild(wrap);
       });
     });
 }
 
-// 載入訂單
 function loadOrders() {
-  const month = document.getElementById("orderMonth").value || new Date().toISOString().slice(0,7);
-  fetch(`${API_URL}?action=getOrdersByMonth&month=${month}`)
-    .then(res => res.json())
-    .then(data => {
-      const tbody = document.getElementById("orderTable");
-      tbody.innerHTML = "";
-      data.orders.forEach(order => {
-        tbody.innerHTML += `
-          <tr>
-            <td>${order.sellTime}</td>
-            <td>${order.productCode}</td>
-            <td>${order.serialNumber}</td>
-            <td>${order.customerName}</td>
-            <td>${order.customerContact}</td>
-            <td>${order.sellPrice}</td>
-            <td>${order.handler}</td>
-            <td>${order.note}</td>
-          </tr>
-        `;
-      });
-      document.getElementById("orderTotal").innerText = `該月份總銷售額：${data.totalSales}`;
+  const month = orderMonth.value || new Date().toISOString().slice(0,7);
+  fetch(API_URL + '?action=getOrders&month=' + month)
+    .then(r => r.json()).then(data => {
+      const c = document.getElementById('orderContainer');
+      c.innerHTML = `<table><tr><th>客戶</th><th>品名</th><th>品號</th><th>序號</th><th>售價</th><th>時間</th></tr>
+        ${data.orders.map(o => `<tr><td>${o.customerName}</td><td>${o.name}</td><td>${o.productCode}</td><td>${o.serialNumber}</td><td>${o.sellPrice}</td><td>${o.sellTime}</td></tr>`).join('')}</table>`;
+      document.getElementById('orderTotal').textContent = '總額：' + data.total;
     });
 }
 
-// 預設設定當月
-document.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("orderMonth").value = new Date().toISOString().slice(0,7);
-});
+showPage('addInventory');
 </script>
-
 </body>
 </html>
